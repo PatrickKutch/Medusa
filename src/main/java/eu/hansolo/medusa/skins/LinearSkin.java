@@ -21,6 +21,8 @@ import eu.hansolo.medusa.Gauge;
 import eu.hansolo.medusa.Gauge.LedType;
 import eu.hansolo.medusa.LcdDesign;
 import eu.hansolo.medusa.Section;
+import eu.hansolo.medusa.tools.Helper;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Point2D;
@@ -158,28 +160,29 @@ public class LinearSkin extends SkinBase<Gauge> implements Skin<Gauge> {
 
         ledCanvas = new Canvas();
         led       = ledCanvas.getGraphicsContext2D();
+        Helper.enableNode(ledCanvas, getSkinnable().isLedVisible());
 
         lcd = new Rectangle(0.3 * preferredWidth, 0.014 * preferredHeight);
         lcd.setArcWidth(0.0125 * preferredHeight);
         lcd.setArcHeight(0.0125 * preferredHeight);
         lcd.relocate((preferredWidth - lcd.getWidth()) * 0.5, 0.44 * preferredHeight);
-        lcd.setManaged(getSkinnable().isLcdVisible());
-        lcd.setVisible(getSkinnable().isLcdVisible());
+        Helper.enableNode(lcd, getSkinnable().isLcdVisible());
 
         bar = new Rectangle();
         bar.setStroke(null);
 
         barHighlight = new Rectangle();
         barHighlight.setStroke(null);
-        boolean barEffectEnabled = getSkinnable().isBarEffectEnabled();
-        barHighlight.setVisible(barEffectEnabled);
-        barHighlight.setManaged(barEffectEnabled);
+        Helper.enableNode(barHighlight, getSkinnable().isBarEffectEnabled());
 
         titleText = new Text(getSkinnable().getTitle());
+        Helper.enableNode(titleText, !getSkinnable().getTitle().isEmpty());
 
         unitText  = new Text(getSkinnable().getUnit());
+        Helper.enableNode(unitText, !getSkinnable().getUnit().isEmpty());
 
         valueText = new Text(String.format(locale, formatString, getSkinnable().getCurrentValue()));
+        Helper.enableNode(valueText, getSkinnable().isValueVisible());
 
         pane = new Pane(barBorder1,
                         barBorder2,
@@ -204,6 +207,9 @@ public class LinearSkin extends SkinBase<Gauge> implements Skin<Gauge> {
 
         getSkinnable().setOnUpdate(e -> handleEvents(e.eventType.name()));
         getSkinnable().currentValueProperty().addListener(e -> setBar(getSkinnable().getCurrentValue()));
+
+        pane.widthProperty().addListener(o -> { resize(); redraw(); });
+        pane.heightProperty().addListener(o -> { resize(); redraw(); });
     }
 
 
@@ -218,30 +224,12 @@ public class LinearSkin extends SkinBase<Gauge> implements Skin<Gauge> {
         } else if ("REDRAW".equals(EVENT_TYPE)) {
             redraw();
         } else if ("VISIBILITY".equals(EVENT_TYPE)) {
-            boolean ledVisible = getSkinnable().isLedVisible();
-            ledCanvas.setManaged(ledVisible);
-            ledCanvas.setVisible(ledVisible);
-
-            boolean titleVisible = !getSkinnable().getTitle().isEmpty();
-            titleText.setVisible(titleVisible);
-            titleText.setManaged(titleVisible);
-
-            boolean unitVisible = !getSkinnable().getUnit().isEmpty();
-            unitText.setVisible(unitVisible);
-            unitText.setManaged(unitVisible);
-
-            boolean valueVisible = getSkinnable().isValueVisible();
-            valueText.setManaged(valueVisible);
-            valueText.setVisible(valueVisible);
-
-            boolean lcdVisible = getSkinnable().isLcdVisible() && getSkinnable().isValueVisible();
-            lcd.setManaged(lcdVisible);
-            lcd.setVisible(lcdVisible);
-
-            boolean barEffectEnabled = getSkinnable().isBarEffectEnabled();
-            barHighlight.setVisible(barEffectEnabled);
-            barHighlight.setManaged(barEffectEnabled);
-
+            Helper.enableNode(ledCanvas, getSkinnable().isLedVisible());
+            Helper.enableNode(titleText, !getSkinnable().getTitle().isEmpty());
+            Helper.enableNode(unitText, !getSkinnable().getUnit().isEmpty());
+            Helper.enableNode(valueText, getSkinnable().isValueVisible());
+            Helper.enableNode(lcd, (getSkinnable().isLcdVisible() && getSkinnable().isValueVisible()));
+            Helper.enableNode(barHighlight, getSkinnable().isBarEffectEnabled());
             redraw();
         } else if ("LED".equals(EVENT_TYPE)) {
             if (getSkinnable().isLedVisible()) { drawLed(); }
@@ -571,6 +559,9 @@ public class LinearSkin extends SkinBase<Gauge> implements Skin<Gauge> {
                 pane.setMaxSize(width, height);
                 pane.relocate((getSkinnable().getWidth() - width) * 0.5, (getSkinnable().getHeight() - height) * 0.5);
 
+                width  = pane.getLayoutBounds().getWidth();
+                height = pane.getLayoutBounds().getHeight();
+
                 barBackground.setWidth(0.14286 * width);
                 barBackground.setHeight( 0.67143 * height);
                 barBackground.relocate((width - barBackground.getWidth()) * 0.5, (height - barBackground.getHeight()) * 0.5);
@@ -637,6 +628,9 @@ public class LinearSkin extends SkinBase<Gauge> implements Skin<Gauge> {
 
                 pane.setMaxSize(width, height);
                 pane.relocate((getSkinnable().getWidth() - width) * 0.5, (getSkinnable().getHeight() - height) * 0.5);
+
+                width  = pane.getLayoutBounds().getWidth();
+                height = pane.getLayoutBounds().getHeight();
 
                 barBackground.setWidth(0.9 * width);
                 barBackground.setHeight(0.14286 * height);
@@ -738,12 +732,12 @@ public class LinearSkin extends SkinBase<Gauge> implements Skin<Gauge> {
                                                     0, 0.74 * ledSize,
                                                     false, CycleMethod.NO_CYCLE,
                                                     new Stop(0.0, LED_COLOR),
-                                                    new Stop(1.0, LED_COLOR.deriveColor(0d, 1d, 0.5, 1d)));
+                                                    new Stop(1.0, LED_COLOR.deriveColor(0.0, 1.0, 0.5, 1.0)));
                     ledOffPaint = new LinearGradient(0, 0.25 * ledSize,
                                                      0, 0.74 * ledSize,
                                                      false, CycleMethod.NO_CYCLE,
-                                                     new Stop(0.0, LED_COLOR.deriveColor(0d, 1d, 0.5, 1d)),
-                                                     new Stop(1.0, LED_COLOR.deriveColor(0d, 1d, 0.13, 1d)));
+                                                     new Stop(0.0, LED_COLOR.deriveColor(0.0, 1.0, 0.5, 1.0)),
+                                                     new Stop(1.0, LED_COLOR.deriveColor(0.0, 1.0, 0.13, 1.0)));
                     ledHighlightPaint = Color.TRANSPARENT;
                     break;
                 case STANDARD:
@@ -760,15 +754,15 @@ public class LinearSkin extends SkinBase<Gauge> implements Skin<Gauge> {
                     ledOnPaint = new LinearGradient(0.25 * ledSize, 0.25 * ledSize,
                                                     0.74 * ledSize, 0.74 * ledSize,
                                                     false, CycleMethod.NO_CYCLE,
-                                                    new Stop(0.0, LED_COLOR.deriveColor(0d, 1d, 0.77, 1d)),
-                                                    new Stop(0.49, LED_COLOR.deriveColor(0d, 1d, 0.5, 1d)),
+                                                    new Stop(0.0, LED_COLOR.deriveColor(0.0, 1.0, 0.77, 1.0)),
+                                                    new Stop(0.49, LED_COLOR.deriveColor(0.0, 1.0, 0.5, 1.0)),
                                                     new Stop(1.0, LED_COLOR));
                     ledOffPaint = new LinearGradient(0.25 * ledSize, 0.25 * ledSize,
                                                      0.74 * ledSize, 0.74 * ledSize,
                                                      false, CycleMethod.NO_CYCLE,
-                                                     new Stop(0.0, LED_COLOR.deriveColor(0d, 1d, 0.20, 1d)),
-                                                     new Stop(0.49, LED_COLOR.deriveColor(0d, 1d, 0.13, 1d)),
-                                                     new Stop(1.0, LED_COLOR.deriveColor(0d, 1d, 0.2, 1d)));
+                                                     new Stop(0.0, LED_COLOR.deriveColor(0.0, 1.0, 0.20, 1.0)),
+                                                     new Stop(0.49, LED_COLOR.deriveColor(0.0, 1.0, 0.13, 1.0)),
+                                                     new Stop(1.0, LED_COLOR.deriveColor(0.0, 1.0, 0.2, 1.0)));
                     ledHighlightPaint = new RadialGradient(0, 0,
                                                            0.3 * ledSize, 0.3 * ledSize,
                                                            0.29 * ledSize,
@@ -779,6 +773,13 @@ public class LinearSkin extends SkinBase<Gauge> implements Skin<Gauge> {
             }
             drawLed();
         }
+
+        // Tickmarks, Sections and Areas
+        ticksAndSectionsCanvas.setCache(false);
+        ticksAndSections.clearRect(0, 0, ticksAndSectionsCanvas.getWidth(), ticksAndSectionsCanvas.getHeight());
+        drawTickMarks(ticksAndSections);
+        ticksAndSectionsCanvas.setCache(true);
+        ticksAndSectionsCanvas.setCacheHint(CacheHint.QUALITY);
 
         // LCD
         LcdDesign lcdDesign = getSkinnable().getLcdDesign();

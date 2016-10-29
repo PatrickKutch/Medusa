@@ -38,6 +38,7 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import javafx.scene.text.Font;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
@@ -59,12 +60,13 @@ import java.util.concurrent.TimeUnit;
  * Created by hansolo on 28.01.16.
  */
 public class Clock extends Control {
-    public enum ClockSkinType { CLOCK, YOTA2, LCD, PEAR, PLAIN, DB, FAT, ROUND_LCD, SLIM, MINIMAL }
+    public enum ClockSkinType { CLOCK, YOTA2, LCD, PEAR, PLAIN, DB, FAT, ROUND_LCD, SLIM, MINIMAL, DIGITAL, TEXT }
 
     public  static final int                  SHORT_INTERVAL   = 20;
     public  static final int                  LONG_INTERVAL    = 1000;
     public  static final Color                DARK_COLOR       = Color.rgb(36, 36, 36);
     public  static final Color                BRIGHT_COLOR     = Color.rgb(223, 223, 223);
+    private        final UpdateEvent          RESIZE_EVENT     = new UpdateEvent(Clock.this, EventType.RESIZE);
     private        final UpdateEvent          REDRAW_EVENT     = new UpdateEvent(Clock.this, EventType.REDRAW);
     private        final UpdateEvent          VISIBILITY_EVENT = new UpdateEvent(Clock.this, EventType.VISIBILITY);
     private        final UpdateEvent          LCD_EVENT        = new UpdateEvent(Clock.this, EventType.LCD);
@@ -180,6 +182,10 @@ public class Clock extends Control {
     private boolean                           _animated;
     private BooleanProperty                   animated;
     private long                              animationDuration;
+    private boolean                           _customFontEnabled;
+    private BooleanProperty                   customFontEnabled;
+    private Font                              _customFont;
+    private ObjectProperty<Font>              customFont;
 
 
     // ******************** Constructors **************************************
@@ -278,6 +284,8 @@ public class Clock extends Control {
         _tickLabelLocation      = TickLabelLocation.INSIDE;
         _animated               = false;
         animationDuration       = 10000;
+        _customFontEnabled      = false;
+        _customFont             = Fonts.robotoRegular(12);
     }
 
     private void registerListeners() { disabledProperty().addListener(o -> setOpacity(isDisabled() ? 0.4 : 1)); }
@@ -1033,7 +1041,7 @@ public class Clock extends Control {
      */
     public void setBorderWidth(final double WIDTH) {
         if (null == borderWidth) {
-            _borderWidth = Helper.clamp(0d, 50d, WIDTH);
+            _borderWidth = Helper.clamp(0.0, 50.0, WIDTH);
             fireUpdateEvent(REDRAW_EVENT);
         } else {
             borderWidth.set(WIDTH);
@@ -1044,7 +1052,7 @@ public class Clock extends Control {
             borderWidth = new DoublePropertyBase(_borderWidth) {
                 @Override protected void invalidated() {
                     final double WIDTH = get();
-                    if (WIDTH < 0 || WIDTH > 50) set(Helper.clamp(0d, 50d, WIDTH));
+                    if (WIDTH < 0 || WIDTH > 50) set(Helper.clamp(0.0, 50.0, WIDTH));
                     fireUpdateEvent(REDRAW_EVENT);
                 }
                 @Override public Object getBean() { return Clock.this; }
@@ -1810,7 +1818,70 @@ public class Clock extends Control {
      * clamped in the range of 10ms - 10s.
      * @param ANIMATION_DURATION
      */
-    public void setAnimationDuration(final long ANIMATION_DURATION) { animationDuration = Helper.clamp(10l, 20000l, ANIMATION_DURATION); }
+    public void setAnimationDuration(final long ANIMATION_DURATION) { animationDuration = Helper.clamp(10, 20000, ANIMATION_DURATION); }
+
+    /**
+     * Returns true if the control uses the given customFont to
+     * render all text elements.
+     * @return true if the control uses the given customFont
+     */
+    public boolean isCustomFontEnabled() { return null == customFontEnabled ? _customFontEnabled : customFontEnabled.get(); }
+    /**
+     * Defines if the control should use the given customFont
+     * to render all text elements
+     * @param ENABLED
+     */
+    public void setCustomFontEnabled(final boolean ENABLED) {
+        if (null == customFontEnabled) {
+            _customFontEnabled = ENABLED;
+            fireUpdateEvent(RESIZE_EVENT);
+        } else {
+            customFontEnabled.set(ENABLED);
+        }
+    }
+    public BooleanProperty customFontEnabledProperty() {
+        if (null == customFontEnabled) {
+            customFontEnabled = new BooleanPropertyBase(_customFontEnabled) {
+                @Override protected void invalidated() { fireUpdateEvent(RESIZE_EVENT); }
+                @Override public Object getBean() { return Clock.this; }
+                @Override public String getName() { return "customFontEnabled"; }
+            };
+        }
+        return customFontEnabled;
+    }
+
+    /**
+     * Returns the given custom Font that can be used to render
+     * all text elements. To enable the custom font one has to set
+     * customFontEnabled = true
+     * @return the given custom Font
+     */
+    public Font getCustomFont() { return null == customFont ? _customFont : customFont.get(); }
+    /**
+     * Defines the custom font that can be used to render all
+     * text elements. To enable the custom font one has to set
+     * customFontEnabled = true
+     * @param FONT
+     */
+    public void setCustomFont(final Font FONT) {
+        if (null == customFont) {
+            _customFont = FONT;
+            fireUpdateEvent(RESIZE_EVENT);
+        } else {
+            customFont.set(FONT);
+        }
+    }
+    public ObjectProperty<Font> customFontProperty() {
+        if (null == customFont) {
+            customFont = new ObjectPropertyBase<Font>() {
+                @Override protected void invalidated() { fireUpdateEvent(RESIZE_EVENT); }
+                @Override public Object getBean() { return Clock.this; }
+                @Override public String getName() { return "customFont"; }
+            };
+            _customFont = null;
+        }
+        return customFont;
+    }
 
     /**
      * Calling this method will check the current time against all Alarm
@@ -1924,7 +1995,7 @@ public class Clock extends Control {
     // ******************** Scheduled tasks ***********************************
     private synchronized static void enableTickExecutorService() {
         if (null == periodicTickExecutorService) {
-            periodicTickExecutorService = new ScheduledThreadPoolExecutor(1, getThreadFactory("ClockTick", false));
+            periodicTickExecutorService = new ScheduledThreadPoolExecutor(1, getThreadFactory("ClockTick", true));
         }
     }
     private synchronized void scheduleTickTask() {
@@ -1973,6 +2044,8 @@ public class Clock extends Control {
             case ROUND_LCD: return new RoundLcdClockSkin(Clock.this);
             case SLIM     : return new SlimClockSkin(Clock.this);
             case MINIMAL  : return new MinimalClockSkin(Clock.this);
+            case DIGITAL  : return new DigitalClockSkin(Clock.this);
+            case TEXT     : return new TextClockSkin(Clock.this);
             case CLOCK    :
             default       : return new ClockSkin(Clock.this);
         }
@@ -2031,13 +2104,16 @@ public class Clock extends Control {
                 setDiscreteMinutes(true);
                 setSecondColor(Color.rgb(167, 0, 0));
                 setSecondsVisible(true);
+                super.setSkin(new DBClockSkin(Clock.this));
                 break;
             case FAT:
                 setDiscreteMinutes(true);
+                super.setSkin(new FatClockSkin(Clock.this));
                 break;
             case ROUND_LCD:
                 setTextVisible(true);
                 setDateVisible(true);
+                super.setSkin(new RoundLcdClockSkin(Clock.this));
                 break;
             case SLIM:
                 setSecondsVisible(true);
@@ -2046,6 +2122,7 @@ public class Clock extends Control {
                 setMinuteColor(Color.rgb(0,191,255));
                 setSecondColor(Color.WHITE);
                 setDateColor(Color.WHITE);
+                super.setSkin(new SlimClockSkin(Clock.this));
             case MINIMAL:
                 setBackgroundPaint(Color.rgb(255, 255, 255, 0.3));
                 setMinuteColor(Color.rgb(59, 209, 255));
@@ -2053,6 +2130,19 @@ public class Clock extends Control {
                 setSecondColor(Color.rgb(255, 255, 255, 0.8));
                 setSecondsVisible(true);
                 setDateVisible(true);
+                super.setSkin(new MinimalClockSkin(Clock.this));
+                break;
+            case DIGITAL:
+                setTextVisible(true);
+                setDateVisible(true);
+                setSecondsVisible(true);
+                super.setSkin(new DigitalClockSkin(Clock.this));
+                break;
+            case TEXT:
+                setTextVisible(true);
+                setDateVisible(true);
+                setSecondsVisible(true);
+                super.setSkin(new TextClockSkin(Clock.this));
                 break;
             case CLOCK:
             default:

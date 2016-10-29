@@ -47,6 +47,7 @@ import javafx.geometry.Pos;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.paint.Stop;
+import javafx.scene.text.Font;
 
 import java.text.NumberFormat;
 import java.util.HashMap;
@@ -535,6 +536,11 @@ public class GaugeBuilder<B extends GaugeBuilder<B>> {
         return (B)this;
     }
 
+    public final B sectionsAlwaysVisible(final boolean VISIBLE) {
+        properties.put("sectionsAlwaysVisible", new SimpleBooleanProperty(VISIBLE));
+        return (B)this;
+    }
+
     public final B sectionTextVisible(final boolean VISIBLE) {
         properties.put("sectionTextVisible", new SimpleBooleanProperty(VISIBLE));
         return (B)this;
@@ -682,6 +688,16 @@ public class GaugeBuilder<B extends GaugeBuilder<B>> {
 
     public final B keepAspect(final boolean KEEP) {
         properties.put("keepAspect", new SimpleBooleanProperty(KEEP));
+        return (B)this;
+    }
+
+    public final B customFontEnabled(final boolean ENABLED) {
+        properties.put("customFontEnabled", new SimpleBooleanProperty(ENABLED));
+        return (B)this;
+    }
+
+    public final B customFont(final Font FONT) {
+        properties.put("customFont", new SimpleObjectProperty(FONT));
         return (B)this;
     }
 
@@ -968,6 +984,22 @@ public class GaugeBuilder<B extends GaugeBuilder<B>> {
                     CONTROL.setValueColor(Color.WHITE);
                     CONTROL.setUnitColor(Color.WHITE);
                     break;
+                case CHARGE:
+                    CONTROL.setMinValue(0);
+                    CONTROL.setMaxValue(1.0);
+                    CONTROL.setAnimated(true);
+                    break;
+                case SIMPLE_SECTION:
+                    CONTROL.setAnimated(true);
+                    CONTROL.setStartAngle(150);
+                    CONTROL.setAngleRange(300);
+                    CONTROL.setSectionsVisible(true);
+                    CONTROL.setBarBackgroundColor(Color.rgb(150, 150, 150, 0.25));
+                    CONTROL.setBarColor(Color.rgb(69, 106, 207));
+                    CONTROL.setTitleColor(Color.rgb(90, 90, 90));
+                    CONTROL.setUnitColor(Color.rgb(90, 90, 90));
+                    CONTROL.setValueColor(Color.rgb(90, 90, 90));
+                    break;
             }
         } else {
             CONTROL = new Gauge();
@@ -1027,6 +1059,13 @@ public class GaugeBuilder<B extends GaugeBuilder<B>> {
             CONTROL.setForegroundBaseColor(((ObjectProperty<Color>) properties.get("foregroundBaseColor")).get());
         }
 
+        if (properties.keySet().contains("minValue")) {
+            CONTROL.setMinValue(((DoubleProperty) properties.get("minValue")).get());
+        }
+        if (properties.keySet().contains("maxValue")) {
+            CONTROL.setMaxValue(((DoubleProperty) properties.get("maxValue")).get());
+        }
+
         for (String key : properties.keySet()) {
             if ("prefSize".equals(key)) {
                 Dimension2D dim = ((ObjectProperty<Dimension2D>) properties.get(key)).get();
@@ -1066,10 +1105,6 @@ public class GaugeBuilder<B extends GaugeBuilder<B>> {
             } else if("styleClass".equals(key)) {
                 CONTROL.getStyleClass().setAll("gauge");
                 CONTROL.getStyleClass().addAll(((ObjectProperty<String[]>) properties.get(key)).get());
-            } else if("minValue".equals(key)) {
-                CONTROL.setMinValue(((DoubleProperty) properties.get(key)).get());
-            } else if("maxValue".equals(key)) {
-                CONTROL.setMaxValue(((DoubleProperty) properties.get(key)).get());
             } else if ("autoScale".equals(key)) {
                 CONTROL.setAutoScale(((BooleanProperty) properties.get(key)).get());
             } else if("value".equals(key)) {
@@ -1202,6 +1237,8 @@ public class GaugeBuilder<B extends GaugeBuilder<B>> {
                 CONTROL.setThresholdVisible(((BooleanProperty) properties.get(key)).get());
             } else if ("sectionsVisible".equals(key)) {
                 CONTROL.setSectionsVisible(((BooleanProperty) properties.get(key)).get());
+            } else if ("sectionsAlwaysVisible".equals(key)) {
+                CONTROL.setSectionsAlwaysVisible(((BooleanProperty) properties.get(key)).get());
             } else if ("sectionTextVisible".equals(key)) {
                 CONTROL.setSectionTextVisible(((BooleanProperty) properties.get(key)).get());
             } else if ("sectionIconsVisible".equals(key)) {
@@ -1288,6 +1325,10 @@ public class GaugeBuilder<B extends GaugeBuilder<B>> {
                 CONTROL.setKeepAspect(((BooleanProperty) properties.get(key)).get());
             } else if ("threshold".equals(key)) {
                 CONTROL.setThreshold(((DoubleProperty) properties.get(key)).get());
+            } else if ("customFontEnabled".equals(key)) {
+                CONTROL.setCustomFontEnabled(((BooleanProperty) properties.get(key)).get());
+            } else if ("customFont".equals(key)) {
+                CONTROL.setCustomFont(((ObjectProperty<Font>) properties.get(key)).get());
             }
         }
 

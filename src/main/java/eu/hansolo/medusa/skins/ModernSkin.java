@@ -227,24 +227,28 @@ public class ModernSkin extends SkinBase<Gauge> implements Skin<Gauge> {
         titleText.setFill(getSkinnable().getTitleColor());
         titleText.setEffect(glow1);
         titleText.setMouseTransparent(true);
+        Helper.enableNode(titleText, !getSkinnable().getTitle().isEmpty());
 
         subTitleText = new Text(getSkinnable().getSubTitle());
         subTitleText.setTextOrigin(VPos.CENTER);
         subTitleText.setFill(getSkinnable().getSubTitleColor());
         subTitleText.setEffect(glow1);
         subTitleText.setMouseTransparent(true);
+        Helper.enableNode(subTitleText, !getSkinnable().getSubTitle().isEmpty());
 
         unitText = new Text(getSkinnable().getUnit());
         unitText.setTextOrigin(VPos.CENTER);
         unitText.setFill(getSkinnable().getUnitColor());
         unitText.setEffect(glow1);
         unitText.setMouseTransparent(true);
+        Helper.enableNode(unitText, !getSkinnable().getUnit().isEmpty());
 
         valueText = new Text(String.format(locale, formatString, getSkinnable().getMinValue()) + getSkinnable().getUnit());
         valueText.setMouseTransparent(true);
         valueText.setTextOrigin(VPos.CENTER);
         valueText.setFill(getSkinnable().getValueColor());
         valueText.setEffect(bigGlow);
+        Helper.enableNode(valueText, getSkinnable().isValueVisible());
 
         // Add all nodes
         pane = new Pane(background,
@@ -281,34 +285,10 @@ public class ModernSkin extends SkinBase<Gauge> implements Skin<Gauge> {
         } else if ("REDRAW".equals(EVENT_TYPE)) {
             redraw();
         } else if ("VISIBILITY".equals(EVENT_TYPE)) {
-            if (getSkinnable().getTitle().isEmpty()) {
-                titleText.setVisible(false);
-                titleText.setManaged(false);
-            } else {
-                titleText.setManaged(true);
-                titleText.setVisible(true);
-            }
-            if (getSkinnable().getSubTitle().isEmpty()) {
-                subTitleText.setVisible(false);
-                subTitleText.setManaged(false);
-            } else {
-                subTitleText.setManaged(true);
-                subTitleText.setVisible(true);
-            }
-            if (getSkinnable().getUnit().isEmpty()) {
-                unitText.setVisible(false);
-                unitText.setManaged(false);
-            } else {
-                unitText.setManaged(true);
-                unitText.setVisible(true);
-            }
-            if (getSkinnable().isValueVisible()) {
-                valueText.setManaged(true);
-                valueText.setVisible(true);
-            } else {
-                valueText.setVisible(false);
-                valueText.setManaged(false);
-            }
+            Helper.enableNode(titleText, !getSkinnable().getTitle().isEmpty());
+            Helper.enableNode(subTitleText, !getSkinnable().getSubTitle().isEmpty());
+            Helper.enableNode(unitText, !getSkinnable().getUnit().isEmpty());
+            Helper.enableNode(valueText, getSkinnable().isValueVisible());
             sectionsVisible = getSkinnable().getSectionsVisible();
             redraw();
         } else if ("RECALC".equals(EVENT_TYPE)) {
@@ -428,15 +408,15 @@ public class ModernSkin extends SkinBase<Gauge> implements Skin<Gauge> {
             outerMediumPointX = centerX + size * 0.4 * sinValue;
             outerMediumPointY = centerY + size * 0.4 * cosValue;
 
-            if (Double.compare(counterBD.remainder(majorTickSpaceBD).doubleValue(), 0d) == 0) {
+            if (Double.compare(counterBD.remainder(majorTickSpaceBD).doubleValue(), 0.0) == 0) {
                 // Draw major tick mark
                 if (majorTickMarksVisible) {
                     CTX.setStroke(counter < CURRENT_VALUE ? highlightColor : tickMarkColor);
                     CTX.strokeLine(innerPointX, innerPointY, outerPointX, outerPointY);
                 }
             } else if (mediumTickMarksVisible &&
-                       Double.compare(minorTickSpaceBD.remainder(mediumCheck2).doubleValue(), 0d) != 0d &&
-                       Double.compare(counterBD.remainder(mediumCheck5).doubleValue(), 0d) == 0d) {
+                       Double.compare(minorTickSpaceBD.remainder(mediumCheck2).doubleValue(), 0.0) != 0.0 &&
+                       Double.compare(counterBD.remainder(mediumCheck5).doubleValue(), 0.0) == 0.0) {
                 // Draw medium tick mark
                 CTX.setStroke(counter < CURRENT_VALUE ? highlightColor : tickMarkColor);
                 CTX.strokeLine(innerMediumPointX, innerMediumPointY, outerMediumPointX, outerMediumPointY);
@@ -608,7 +588,7 @@ public class ModernSkin extends SkinBase<Gauge> implements Skin<Gauge> {
             // Set the general tickmark color
             CTX.setStroke(tickMarkColor);
 
-            if (Double.compare(counterBD.remainder(majorTickSpaceBD).doubleValue(), 0d) == 0) {
+            if (Double.compare(counterBD.remainder(majorTickSpaceBD).doubleValue(), 0.0) == 0) {
                 // Draw major tick mark
                 if (majorTickMarksVisible) {
                     CTX.setFill(majorTickMarkColor);
@@ -632,8 +612,8 @@ public class ModernSkin extends SkinBase<Gauge> implements Skin<Gauge> {
                     CTX.restore();
                 }
             } else if (mediumTickMarksVisible &&
-                       Double.compare(minorTickSpaceBD.remainder(mediumCheck2).doubleValue(), 0d) != 0d &&
-                       Double.compare(counterBD.remainder(mediumCheck5).doubleValue(), 0d) == 0d) {
+                       Double.compare(minorTickSpaceBD.remainder(mediumCheck2).doubleValue(), 0.0) != 0.0 &&
+                       Double.compare(counterBD.remainder(mediumCheck5).doubleValue(), 0.0) == 0.0) {
                 // Draw medium tick mark
                 CTX.setFill(mediumTickMarkColor);
                 CTX.setStroke(mediumTickMarkColor);

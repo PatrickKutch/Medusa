@@ -34,6 +34,7 @@ import javafx.geometry.Dimension2D;
 import javafx.geometry.Insets;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import javafx.scene.text.Font;
 
 import java.time.ZonedDateTime;
 import java.util.HashMap;
@@ -332,6 +333,16 @@ public class ClockBuilder <B extends ClockBuilder<B>> {
         return (B)this;
     }
 
+    public final B customFontEnabled(final boolean ENABLED) {
+        properties.put("customFontEnabled", new SimpleBooleanProperty(ENABLED));
+        return (B)this;
+    }
+
+    public final B customFont(final Font FONT) {
+        properties.put("customFont", new SimpleObjectProperty(FONT));
+        return (B)this;
+    }
+
     public final B prefSize(final double WIDTH, final double HEIGHT) {
         properties.put("prefSize", new SimpleObjectProperty<>(new Dimension2D(WIDTH, HEIGHT)));
         return (B)this;
@@ -477,6 +488,16 @@ public class ClockBuilder <B extends ClockBuilder<B>> {
                     CONTROL.setSecondColor(Color.rgb(255, 255, 255, 0.8));
                     CONTROL.setSecondsVisible(true);
                     CONTROL.setDateVisible(true);
+                    break;
+                case DIGITAL:
+                    CONTROL.setTextVisible(true);
+                    CONTROL.setDateVisible(true);
+                    CONTROL.setSecondsVisible(true);
+                    break;
+                case TEXT:
+                    CONTROL.setTextVisible(true);
+                    CONTROL.setDateVisible(true);
+                    CONTROL.setSecondsVisible(true);
                     break;
             }
         } else {
@@ -640,6 +661,10 @@ public class ClockBuilder <B extends ClockBuilder<B>> {
                 CONTROL.setAnimationDuration(((LongProperty) properties.get(key)).get());
             } else if ("running".equals(key)) {
                 CONTROL.setRunning(((BooleanProperty) properties.get(key)).get());
+            } else if ("customFontEnabled".equals(key)) {
+                CONTROL.setCustomFontEnabled(((BooleanProperty) properties.get(key)).get());
+            } else if ("customFont".equals(key)) {
+                CONTROL.setCustomFont(((ObjectProperty<Font>) properties.get(key)).get());
             }
         }
         return CONTROL;

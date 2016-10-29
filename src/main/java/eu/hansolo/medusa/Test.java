@@ -17,39 +17,35 @@
 package eu.hansolo.medusa;
 
 import eu.hansolo.medusa.Clock.ClockSkinType;
-import eu.hansolo.medusa.Gauge.KnobType;
-import eu.hansolo.medusa.Gauge.NeedleShape;
-import eu.hansolo.medusa.Gauge.NeedleSize;
-import eu.hansolo.medusa.Gauge.NeedleType;
 import eu.hansolo.medusa.Gauge.SkinType;
+import eu.hansolo.medusa.Section.SectionEvent;
+import eu.hansolo.medusa.events.UpdateEvent;
+import eu.hansolo.medusa.events.UpdateEvent.EventType;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
-import javafx.scene.layout.CornerRadii;
-import javafx.scene.layout.HBox;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
 import javafx.stage.Stage;
-import javafx.scene.layout.StackPane;
-import javafx.scene.Scene;
 
 import java.math.RoundingMode;
 import java.text.NumberFormat;
-import java.time.LocalTime;
-import java.time.ZonedDateTime;
-import java.util.Currency;
 import java.util.Locale;
 import java.util.Random;
 
@@ -61,14 +57,15 @@ import java.util.Random;
  * Time: 06:31
  */
 public class Test extends Application {
-    private static final Random         RND = new Random();
-    private static       int            noOfNodes = 0;
-    private Gauge           gauge;
-    private Clock           clock;
-    private long            lastTimerCall;
-    private AnimationTimer  timer;
-    private DoubleProperty  value;
-    private BooleanProperty toggle;
+    private static final Random          RND       = new Random();
+    private static       int             noOfNodes = 0;
+    private              FGauge          fgauge;
+    private              Gauge           gauge;
+    private              Clock           clock;
+    private              long            lastTimerCall;
+    private              AnimationTimer  timer;
+    private              DoubleProperty  value;
+    private              BooleanProperty toggle;
 
 
     @Override public void init() {
@@ -82,25 +79,51 @@ public class Test extends Application {
         value  = new SimpleDoubleProperty(0);
         toggle = new SimpleBooleanProperty(false);
 
+        fgauge = FGaugeBuilder.create()
+                              .gaugeDesign(GaugeDesign.NONE)
+                              .build();
+
+
         gauge = GaugeBuilder.create()
-                            .prefSize(400, 400)
+                            .skinType(SkinType.SIMPLE_SECTION)
+                            .prefSize(250, 250)
+                            .minValue(0)
+                            .maxValue(100)
                             .animated(true)
-                            .checkThreshold(true)
-                            .onThresholdExceeded(e -> System.out.println("threshold exceeded"))
-                            .threshold(50)
-                            .lcdVisible(true)
-                            .locale(Locale.GERMANY)
-                            .numberFormat(numberFormat)
+                            //.checkThreshold(true)
+                            //.onThresholdExceeded(e -> System.out.println("threshold exceeded"))
+                            //.threshold(50)
+                            //.lcdVisible(true)
+                            //.locale(Locale.GERMANY)
+                            //.numberFormat(numberFormat)
+                            .title("Title")
+                            .unit("°C")
+                            .subTitle("SubTitle")
+                            //.interactive(true)
+                            //.onButtonPressed(o -> System.out.println("Button pressed"))
+                            //.title("Title")
+                            .sections(new Section(0, 33, Color.RED),
+                                      new Section(33, 66, Color.YELLOW),
+                                      new Section(66, 100, Color.LIME))
+                            .sectionsVisible(true)
+                            //.autoScale(false)
                             .build();
+
         gauge.valueProperty().bind(value);
+
+        gauge.getSections().forEach(section -> section.setOnSectionUpdate(sectionEvent -> gauge.fireUpdateEvent(new UpdateEvent(Test.this, EventType.REDRAW))));
+
         //gauge.valueVisibleProperty().bind(toggle);
 
         clock = ClockBuilder.create()
-                            .skinType(ClockSkinType.MINIMAL)
+                            .skinType(ClockSkinType.TEXT)
                             //.onTimeEvent(e -> System.out.println(e.TYPE))
-                            .discreteSeconds(false)
+                            //.discreteSeconds(false)
+                            .locale(Locale.GERMANY)
                             .secondsVisible(true)
-                            //.running(true)
+                            .dateVisible(true)
+                            .customFont(Fonts.latoLight(10))
+                            .running(true)
                             .build();
 
         lastTimerCall = System.nanoTime();
@@ -121,7 +144,7 @@ public class Test extends Application {
     }
 
     @Override public void start(Stage stage) {
-        StackPane pane = new StackPane(gauge);
+        StackPane pane = new StackPane(fgauge);
         pane.setPadding(new Insets(20));
         LinearGradient gradient = new LinearGradient(0, 0, 0, pane.getLayoutBounds().getHeight(),
                                                      false, CycleMethod.NO_CYCLE,
@@ -146,11 +169,15 @@ public class Test extends Application {
         System.out.println(noOfNodes + " Nodes in SceneGraph");
 
         timer.start();
+
+        //gauge.getSections().get(0).setStart(10);
+        //gauge.getSections().get(0).setStop(90);
     }
 
     @Override public void stop() {
         System.exit(0);
     }
+
 
 
     // ******************** Misc **********************************************
